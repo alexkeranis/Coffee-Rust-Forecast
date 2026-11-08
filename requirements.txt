@@ -1,0 +1,5 @@
+# Runtime for the scheduled CPU inference job.
+numpy==2.5.4
+pandas==3.1.1
+requests==2.34.2
+xgboost-cpu==3.4.1

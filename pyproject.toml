@@ -1,0 +1,9 @@
+[project]
+name = "coffee-rust-forecaster"
+version = "0.1.0"
+description = "Hemileia vastatrix (coffee leaf rust) infection risk forecaster for Minas Gerais"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

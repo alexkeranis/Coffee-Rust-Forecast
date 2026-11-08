@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coffee Rust Forecaster</title>
+  <meta name="description" content="7-night Hemileia vastatrix (coffee leaf rust) infection risk forecast for Varginha, Minas Gerais.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='16' rx='9' ry='13' fill='%2300f0ff'/%3E%3Cpath d='M16 4c-3 5-3 19 0 24' stroke='%23050508' stroke-width='2' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <div class="layer layer-far"></div>
+    <div class="layer layer-near"></div>
+  </div>
+  <div class="page">
+    <header class="masthead">
+      <div>
+        <h1>Coffee Rust Forecaster</h1>
+        <p class="subtitle"><i>Hemileia vastatrix</i> infection risk · <span id="site-name">Varginha, MG</span></p>
+      </div>
+      <div class="masthead-meta">
+        <span id="updated" class="muted"></span>
+      </div>
+    </header>
+
+    <div id="stale" class="banner" hidden></div>
+    <div id="error" class="banner banner-error" hidden></div>
+
+    <main id="content" aria-busy="true">
+      <section class="overview" aria-label="Alert summary">
+        <article class="card hero">
+          <h2 class="card-label">Pathogen alert level</h2>
+          <div id="alert-pill" class="status-pill"></div>
+          <p class="hero-figure"><span id="hero-value">–</span></p>
+          <p id="hero-caption" class="secondary"></p>
+        </article>
+        <article class="card tile">
+          <h2 class="card-label">Tonight</h2>
+          <p class="tile-value" id="tonight-value">–</p>
+          <p class="secondary" id="tonight-caption"></p>
+        </article>
+        <article class="card tile">
+          <h2 class="card-label">High-risk nights ahead</h2>
+          <p class="tile-value" id="high-value">–</p>
+          <p class="secondary">nights at High or Severe in the next 7</p>
+        </article>
+        <article class="card tile">
+          <h2 class="card-label">Last 14 nights</h2>
+          <p class="tile-value" id="recent-value">–</p>
+          <div id="recent-strip" class="strip" role="list" aria-label="Infection-favourable nights over the last 14 nights"></div>
+          <p class="secondary">infection-favourable, from recent weather</p>
+        </article>
+      </section>
+
+      <section class="card" aria-labelledby="risk-title">
+        <div class="card-head">
+          <div>
+            <h2 id="risk-title">7-night infection risk</h2>
+            <p class="secondary">Calibrated probability that each night meets the spore germination conditions. Alert levels: Low under 25%, Moderate 25–50%, High 50–75%, Severe 75% and above.</p>
+          </div>
+        </div>
+        <div class="chart-box chart-risk"><canvas id="risk-chart" role="img" aria-label="Column chart of nightly infection probability; values are listed in the table below"></canvas></div>
+      </section>
+
+      <section class="card" aria-labelledby="wx-title">
+        <div class="card-head">
+          <div>
+            <h2 id="wx-title">Hourly conditions</h2>
+            <p class="secondary">Recent weather and the GFS forecast. Shaded hours meet the germination conditions.</p>
+          </div>
+          <ul class="legend" aria-label="Hourly chart key">
+            <li><span class="key key-wash" aria-hidden="true"></span>Leaf wet and 15–28 °C</li>
+            <li><span class="key key-rule" aria-hidden="true"></span>Forecast starts</li>
+            <li><span class="key key-threshold" aria-hidden="true"></span>Biological threshold</li>
+          </ul>
+        </div>
+        <div class="multiples" id="wx-multiples" tabindex="0" aria-label="Hourly temperature, humidity and rain. Use left and right arrow keys to step through hours.">
+          <div class="multiple">
+            <h3>Temperature <span class="muted">°C</span></h3>
+            <div class="chart-box chart-small"><canvas id="temp-chart" role="img" aria-label="Hourly temperature"></canvas></div>
+          </div>
+          <div class="multiple">
+            <h3>Relative humidity <span class="muted">%</span></h3>
+            <div class="chart-box chart-small"><canvas id="rh-chart" role="img" aria-label="Hourly relative humidity"></canvas></div>
+          </div>
+          <div class="multiple">
+            <h3>Rain <span class="muted">mm per hour</span></h3>
+            <div class="chart-box chart-small chart-axis"><canvas id="rain-chart" role="img" aria-label="Hourly rain"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="table-title">
+        <h2 id="table-title">Night-by-night detail</h2>
+        <p class="secondary">Each night runs noon to noon, local time. "Rule on raw forecast" applies the biological thresholds directly to the GFS forecast; the model probability corrects its biases.</p>
+        <div class="table-scroll"><table class="data-table" id="night-table"></table></div>
+      </section>
+
+      <section class="card about" aria-labelledby="about-title">
+        <h2 id="about-title">How it works</h2>
+        <div class="about-grid">
+          <div>
+            <h3>The biology</h3>
+            <p>Coffee leaf rust spores only germinate in liquid water on the leaf, in darkness, between roughly 15 and 28 °C (best near 22 °C). Infection needs at least about 6 consecutive hours of these conditions. Leaf wetness is estimated from humidity ≥ 90 %, dew-point depression ≤ 2 °C, or rain.</p>
+          </div>
+          <div>
+            <h3>The model</h3>
+            <p>An XGBoost classifier, trained on archived GFS forecasts and labels from those biological rules, turns each night's forecast into a calibrated probability. Out-of-sample ROC-AUC by forecast day:</p>
+            <p id="skill" class="skill"></p>
+          </div>
+          <div>
+            <h3>Limits</h3>
+            <p>This forecasts weather favourability for infection only. It does not know spore load, crop load, cultivar resistance or fungicide schedules. It is a research prototype, not agronomic advice.</p>
+          </div>
+        </div>
+        <div class="data-notes">
+          <h3>Where the weather data comes from</h3>
+          <ul>
+            <li><strong>Forecast: GFS.</strong> The next seven nights come from the Global Forecast System, the global weather model run four times a day by the US National Weather Service (NOAA). It covers the world on a coarse grid, so at a single farm-scale site its humidity and leaf-wetness hours are systematically off.</li>
+            <li><strong>Recent weather: GFS analysis, not a weather station.</strong> The "Recent" part of the hourly charts and the "Last 14 nights" strip show GFS's own estimate of those hours, taken from the start of each model run. It is the only recent weather available every day, and the model was trained on this same series, so the inputs mean the same thing live as they did in training.</li>
+            <li><strong>Ground truth: reanalysis.</strong> The infection nights the model learned from were labelled on reanalysis, a best-estimate reconstruction of past weather that combines weather models with observations. It is more accurate than GFS but arrives about five days late, so it is used for training only.</li>
+            <li><strong>Bias correction.</strong> Applying the biological rule directly to GFS flags infection on too many nights, increasingly so further ahead (the "Rule on raw forecast" column above). The model learned, from almost three years of archived GFS forecasts, how those forecasts compared with what reanalysis later showed, and turns each night's forecast into a corrected probability.</li>
+          </ul>
+        </div>
+        <p class="muted small" id="model-meta"></p>
+      </section>
+    </main>
+
+    <div id="tooltip" class="tooltip" role="status" aria-live="polite" hidden></div>
+  </div>
+</body>
+</html>
