@@ -104,25 +104,24 @@
         <div class="about-grid">
           <div>
             <h3>The biology</h3>
-            <p>Coffee leaf rust spores only germinate in liquid water on the leaf, in darkness, between roughly 15 and 28 °C (best near 22 °C). Infection needs at least about 6 consecutive hours of these conditions. Leaf wetness is estimated from humidity ≥ 90 %, dew-point depression ≤ 2 °C, or rain.</p>
+            <p>Rust spores germinate only in liquid water on the leaf, in darkness, at about 15–28 °C (best near 22 °C), and infection needs roughly 6 such hours in a row. Leaf wetness is inferred from humidity ≥ 90 %, dew-point depression ≤ 2 °C, or rain.</p>
           </div>
           <div>
             <h3>The model</h3>
-            <p>An XGBoost classifier, trained on archived GFS forecasts and labels from those biological rules, turns each night's forecast into a calibrated probability. Out-of-sample ROC-AUC by forecast day:</p>
+            <p>Applied directly to GFS, those rules flag too many nights, more so further ahead. An XGBoost classifier trained on almost three years of archived GFS forecasts corrects this and returns a calibrated probability. Out-of-sample ROC-AUC by forecast day:</p>
             <p id="skill" class="skill"></p>
           </div>
           <div>
             <h3>Limits</h3>
-            <p>This forecasts weather favourability for infection only. It does not know spore load, crop load, cultivar resistance or fungicide schedules. It is a research prototype, not agronomic advice.</p>
+            <p>Weather favourability only: spore load, crop load, cultivar resistance and fungicide use are not modelled. A research prototype, not agronomic advice.</p>
           </div>
         </div>
         <div class="data-notes">
-          <h3>Where the weather data comes from</h3>
+          <h3>Weather data</h3>
           <ul>
-            <li><strong>Forecast: GFS.</strong> The next seven nights come from the Global Forecast System, the global weather model run four times a day by the US National Weather Service (NOAA). It covers the world on a coarse grid, so at a single farm-scale site its humidity and leaf-wetness hours are systematically off.</li>
-            <li><strong>Recent weather: GFS analysis, not a weather station.</strong> The "Recent" part of the hourly charts and the "Last 14 nights" strip show GFS's own estimate of those hours, taken from the start of each model run. It is the only recent weather available every day, and the model was trained on this same series, so the inputs mean the same thing live as they did in training.</li>
-            <li><strong>Ground truth: reanalysis.</strong> The infection nights the model learned from were labelled on reanalysis, a best-estimate reconstruction of past weather that combines weather models with observations. It is more accurate than GFS but arrives about five days late, so it is used for training only.</li>
-            <li><strong>Bias correction.</strong> Applying the biological rule directly to GFS flags infection on too many nights, increasingly so further ahead (the "Rule on raw forecast" column above). The model learned, from almost three years of archived GFS forecasts, how those forecasts compared with what reanalysis later showed, and turns each night's forecast into a corrected probability.</li>
+            <li><strong>Forecast:</strong> GFS, NOAA's global model. Its coarse grid misjudges humidity and wet hours at a single site, which is what the model corrects.</li>
+            <li><strong>Recent weather:</strong> GFS's own analysis of past hours, not a weather station. It is the only series available every day, and the model was trained on it.</li>
+            <li><strong>Training labels:</strong> reanalysis, which blends models with observations. It is more accurate but about five days late, so it is used for training only.</li>
           </ul>
         </div>
         <p class="muted small" id="model-meta"></p>

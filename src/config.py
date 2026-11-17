@@ -1,4 +1,4 @@
-"""Central project configuration: study site, data paths, and API settings."""
+"""Study site, data paths, API settings, model and infection-rule parameters."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,7 +20,6 @@ LOCAL_TZ = "America/Sao_Paulo"
 # Reanalysis history, used for labels (the archive lags real time by ~5 days).
 HISTORY_START = "2019-01-01"
 
-# Hourly reanalysis variables.
 HOURLY_VARS = [
     "temperature_2m",         # degC
     "relative_humidity_2m",   # %
@@ -55,6 +54,7 @@ FORECAST_VARS = [
 ]
 RAW_PREVIOUS_RUNS_CSV = DATA_RAW / f"{SITE['name'].lower()}_previous_runs_{FORECAST_MODEL}.csv"
 FEATURES_CSV = DATA_PROCESSED / f"{SITE['name'].lower()}_training_features.csv"
+DAILY_LABELS_CSV = DATA_PROCESSED / f"{SITE['name'].lower()}_daily_infection_labels.csv"
 OOF_PREDICTIONS_CSV = DATA_PROCESSED / "oof_predictions.csv"
 
 MODEL_PATH = MODELS / "coffee_rust_xgb.json"     # native XGBoost format (version-portable)
@@ -74,13 +74,11 @@ XGB_PARAMS = {
 }
 EARLY_STOPPING_ROUNDS = 100
 
-# Live inference
 RISK_JSON = DOCS / "rust_risk.json"
 LIVE_PAST_DAYS = 45        # the API keeps ~42 days of GFS history; features need 33
 LIVE_FORECAST_DAYS = 9     # night 7 ends at local noon on D+7
 # Alert levels on the calibrated probability of an infection night (lower bounds).
 RISK_LEVELS = [(0.0, "Low"), (0.25, "Moderate"), (0.5, "High"), (0.75, "Severe")]
-DAILY_LABELS_CSV = DATA_PROCESSED / f"{SITE['name'].lower()}_daily_infection_labels.csv"
 
 # Hemileia vastatrix infection heuristic.
 # Urediniospores need liquid water on the leaf to germinate, germination is inhibited by

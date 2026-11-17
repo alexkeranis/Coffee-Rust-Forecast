@@ -23,7 +23,7 @@ import xgboost as xgb
 from src import config
 from src.api import get_json
 from src.features import CUTOFF_HOUR, MIN_HISTORY_DAYS, build_feature_table
-from src.label_infection import hourly_flags, label_nights
+from src.label_infection import hourly_flags, label_nights, to_local
 
 
 def fetch_live() -> pd.DataFrame:
@@ -37,10 +37,7 @@ def fetch_live() -> pd.DataFrame:
         "timezone": "GMT",
     }
     hourly = get_json(config.OPEN_METEO_FORECAST_URL, params)["hourly"]
-    df = pd.DataFrame(hourly)
-    df["time_utc"] = pd.to_datetime(df.pop("time"), utc=True)
-    df["time_local"] = df["time_utc"].dt.tz_convert(config.LOCAL_TZ)
-    return df
+    return to_local(pd.DataFrame(hourly).rename(columns={"time": "time_utc"}))
 
 
 def issue_date(now_utc: pd.Timestamp) -> pd.Timestamp:

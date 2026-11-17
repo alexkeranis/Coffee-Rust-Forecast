@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           cache: pip
@@ -23,7 +23,7 @@ jobs:
         run: pip install -r requirements.txt pytest pyflakes
 
       - name: Lint
-        run: pyflakes src tests
+        run: pyflakes src tests scripts
 
       # Tests that need the downloaded archives skip themselves; the synthetic
       # pipeline tests and the committed model are always exercised.

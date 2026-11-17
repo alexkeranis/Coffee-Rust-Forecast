@@ -5,6 +5,11 @@ on:
     # Daily at 21:00 UTC = 18:00 in Minas Gerais (BRT, UTC-3, no DST since 2019).
     # After local noon, so the issue date is "today" and night 1 is tonight.
     - cron: "0 21 * * *"
+  # Also refresh after every push, so code, model or dashboard changes go live with a
+  # current forecast. The bot's own commits use GITHUB_TOKEN and never retrigger this.
+  push:
+    branches: [main]
+    paths-ignore: [docs/rust_risk.json]
   workflow_dispatch:
 
 permissions:
@@ -17,11 +22,11 @@ concurrency:
 jobs:
   forecast:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           cache: pip
@@ -30,8 +35,14 @@ jobs:
       - name: Install runtime dependencies (CPU-only)
         run: pip install -r requirements.txt
 
+      # One retry after 10 minutes rides out short Open-Meteo outages.
       - name: Generate 7-night forecast
-        run: python -m src.update_forecast
+        run: |
+          python -m src.update_forecast || {
+            echo "Forecast failed, retrying in 10 minutes."
+            sleep 600
+            python -m src.update_forecast
+          }
 
       - name: Commit updated forecast
         run: |

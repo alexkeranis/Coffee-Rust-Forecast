@@ -19,10 +19,16 @@ from src import config
 R = config.INFECTION_RULE
 
 
-def load_hourly(path=config.RAW_CLIMATE_CSV) -> pd.DataFrame:
-    df = pd.read_csv(path)
+def to_local(df: pd.DataFrame) -> pd.DataFrame:
+    """Parse `time_utc` and add the matching `time_local` column."""
+    df = df.copy()
     df["time_utc"] = pd.to_datetime(df["time_utc"], utc=True)
     df["time_local"] = df["time_utc"].dt.tz_convert(config.LOCAL_TZ)
+    return df
+
+
+def load_hourly(path=config.RAW_CLIMATE_CSV) -> pd.DataFrame:
+    df = to_local(pd.read_csv(path))
     return df.sort_values("time_local").reset_index(drop=True)
 
 

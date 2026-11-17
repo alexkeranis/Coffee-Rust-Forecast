@@ -16,7 +16,6 @@ const ICONS = {
 const $ = (id) => document.getElementById(id);
 const state = { data: null, charts: [], hover: null, hourlyCharts: [] };
 
-// ------------------------------------------------------------------ helpers
 function css(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
@@ -64,7 +63,6 @@ function statusInline(level) {
   return wrap;
 }
 
-// ------------------------------------------------------------------ tooltip
 const tip = () => $("tooltip");
 function showTooltip(title, rows, x, y) {
   const t = tip();
@@ -91,7 +89,6 @@ function showTooltip(title, rows, x, y) {
 }
 const hideTooltip = () => { tip().hidden = true; };
 
-// ------------------------------------------------------------------ overview
 function renderOverview(d) {
   $("site-name").textContent = `${d.site.name}, ${d.site.state}`;
   const gen = new Date(d.generated_at);
@@ -108,7 +105,7 @@ function renderOverview(d) {
   pill.innerHTML = ICONS[status];
   pill.append(document.createTextNode(a.level));
   pill.style.background = `var(--status-${status})`;
-  pill.style.color = status === "warning" ? "var(--on-warning)" : "var(--on-status)";
+  pill.style.color = "var(--on-status)";
   $("hero-value").textContent = pct(a.max_probability);
   $("hero-caption").textContent = `peak infection probability, night of ${fmtNight(a.peak_night)}`;
 
@@ -134,7 +131,6 @@ function renderOverview(d) {
   }));
 }
 
-// ------------------------------------------------------------------ risk chart
 // Gradient stops sit at the middle of each alert band (Low 0-25%, Moderate, High, Severe),
 // so a bar's colour at any height matches the risk level of that probability.
 const RISK_STOPS = [0.125, 0.375, 0.625, 0.875];
@@ -169,10 +165,13 @@ function riskGradient(chart, colors) {
   return g;
 }
 
-// Draws each bar with a soft glow in the colour at its top.
+// Draws each bar with a soft glow in the colour at its top. Skipped when printing: a blurred
+// shadow makes Chrome rasterize the canvas onto an opaque white box in the PDF.
+const printing = window.matchMedia("print");
 const barGlow = {
   id: "barGlow",
   beforeDatasetDraw(chart, args, opts) {
+    if (printing.matches) return;
     const { ctx } = chart;
     const values = chart.data.datasets[args.index].data;
     args.meta.data.forEach((bar, i) => {
@@ -271,7 +270,6 @@ function renderRiskChart(d, tk) {
   return chart;
 }
 
-// ------------------------------------------------------------------ hourly multiples
 const hourlyLayers = {
   id: "hourlyLayers",
   beforeDatasetsDraw(chart, _a, o) {
@@ -466,7 +464,6 @@ function wireHourlyInteraction() {
   });
 }
 
-// ------------------------------------------------------------------ tables
 function fillTable(table, headers, rows) {
   const thead = el("thead"), tr = el("tr");
   headers.forEach(([label, num]) => tr.append(el("th", num ? "num" : null, label)));
@@ -513,7 +510,6 @@ function renderCharts() {
   state.charts = [renderRiskChart(state.data, tk), ...renderHourly(state.data, tk)];
 }
 
-// ------------------------------------------------------------------ parallax
 // Each backdrop layer travels its own extra height over the full scroll range, so the
 // taller (near) layer moves faster than the far one and neither edge ever shows,
 // whatever the page length or screen size.
@@ -545,6 +541,8 @@ async function boot() {
     renderTables(state.data);
     renderAbout(state.data);
     wireHourlyInteraction();
+    // Canvases are sized for the screen; re-measure and redraw when printing starts and ends.
+    printing.addEventListener("change", () => state.charts.forEach((c) => { c.resize(); c.draw(); }));
   } catch (err) {
     $("error").hidden = false;
     $("error").textContent = `Could not load the forecast (${err.message}).`;

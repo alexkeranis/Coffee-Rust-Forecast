@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from src import config
-from src.label_infection import R, infection_night, leaf_wetness, night_stats
+from src.label_infection import R, infection_night, leaf_wetness, night_stats, to_local
 
 CUTOFF_HOUR = 11  # last observed local hour before night k=1 begins at noon
 # Live inference only sees ~6 weeks of past weather, so cap this to keep train/live consistent.
@@ -32,13 +32,6 @@ MIN_HISTORY_DAYS = DAYS_SINCE_EVENT_CAP + 3
 def _run_length(mask: pd.Series) -> pd.Series:
     """Length of the current run of True values ending at each row."""
     return mask.groupby((~mask).cumsum()).cumsum()
-
-
-def _to_local(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df["time_utc"] = pd.to_datetime(df["time_utc"], utc=True)
-    df["time_local"] = df["time_utc"].dt.tz_convert(config.LOCAL_TZ)
-    return df
 
 
 def vapour_pressure_deficit(t: pd.Series, rh: pd.Series) -> pd.Series:
@@ -61,7 +54,7 @@ def observed_from_lead0(prev_runs: pd.DataFrame) -> pd.DataFrame:
     """Hourly 'observed' series from the lead-0 columns of the previous-runs archive."""
     cols = {f"{v}_lead0": v for v in config.FORECAST_VARS}
     df = prev_runs[["time_utc", *cols]].rename(columns=cols)
-    df = _to_local(df).dropna().sort_values("time_utc").reset_index(drop=True)
+    df = to_local(df).dropna().sort_values("time_utc").reset_index(drop=True)
     check_hourly(df, config.FORECAST_VARS)
     return df
 
@@ -136,7 +129,7 @@ def forecast_long_from_leads(prev_runs: pd.DataFrame) -> pd.DataFrame:
                        - pd.Timedelta(days=j))
         frames.append(fj)
     long = pd.concat(frames, ignore_index=True).dropna()
-    return _to_local(long)
+    return to_local(long)
 
 
 def forecast_features(fc_long: pd.DataFrame, rule: dict = R) -> pd.DataFrame:

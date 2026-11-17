@@ -14,7 +14,7 @@ GRID = "#e1e0d9"
 AXIS = "#c3c2b7"
 
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
-BLUE, ORANGE, AQUA = SERIES[0], SERIES[1], SERIES[2]
+BLUE = SERIES[0]
 
 # sequential, light to dark
 BLUE_RAMP = ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5",
